@@ -3,3 +3,8 @@ dist
 .DS_Store
 .npmrc
 .vscode
+/index.js
+/index.css
+/jszip.js
+/index.js.map
+/manifest.json
