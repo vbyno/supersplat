@@ -138,6 +138,8 @@ void main(void) {
             // selected
             color.xyz = mix(color.xyz, selectedClr.xyz * 0.8, selectedClr.a);
         }
+
+        // PLUGIN_CROP_HOOK
     #endif
 }
 `;
