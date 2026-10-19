@@ -37,6 +37,8 @@ class EditorUI {
     topContainer: Container;
     canvasContainer: Container;
     toolsContainer: Container;
+    bottomToolbar: BottomToolbar;
+    tooltips: Tooltips;
     canvas: HTMLCanvasElement;
     popup: Popup;
     container: HTMLElement;
@@ -124,6 +126,8 @@ class EditorUI {
         const viewPanel = new ViewPanel(events, tooltips);
         const colorPanel = new ColorPanel(events, tooltips);
         const bottomToolbar = new BottomToolbar(events, tooltips);
+        this.bottomToolbar = bottomToolbar;
+        this.tooltips = tooltips;
         const rightToolbar = new RightToolbar(events, tooltips);
         const modeToggle = new ModeToggle(events, tooltips);
         const menu = new Menu(events, container);

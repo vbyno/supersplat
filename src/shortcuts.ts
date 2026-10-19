@@ -12,12 +12,36 @@ interface ShortcutOptions {
 class Shortcuts {
     shortcuts: { keys: string[], options: ShortcutOptions, toggled: boolean }[] = [];
 
+    overrides: Map<string, Array<() => void>> = new Map();
+
+    override(handlers: Record<string, () => void>) {
+        for (const [name, handler] of Object.entries(handlers)) {
+            const stack = this.overrides.get(name) ?? [];
+            stack.push(handler);
+            this.overrides.set(name, stack);
+        }
+        let released = false;
+        return () => {
+            if (released) return;
+            released = true;
+            for (const [name, handler] of Object.entries(handlers)) {
+                const stack = this.overrides.get(name);
+                if (!stack) continue;
+                const index = stack.lastIndexOf(handler);
+                if (index !== -1) stack.splice(index, 1);
+                if (!stack.length) this.overrides.delete(name);
+            }
+        };
+    }
+
     constructor(events: Events, container: HTMLElement) {
         const shortcuts = this.shortcuts;
 
         const handleEvent = (e: KeyboardEvent, down: boolean, capture: boolean) => {
-            // skip keys in input fields
-            if (!capture && e.target !== container) return;
+            if (!(e.target instanceof Node) || !container.contains(e.target)) return;
+            if (e.target instanceof Element && e.target.closest('input,textarea,select,[contenteditable=true]')) return;
+            // Escape also closes tools after using a button in an editor panel.
+            if (!capture && e.target !== container && e.key !== 'Escape') return;
 
             for (let i = 0; i < shortcuts.length; i++) {
                 const shortcut  = shortcuts[i];
@@ -46,7 +70,10 @@ class Shortcuts {
                     }
 
                     if (shortcuts[i].options.event) {
-                        events.fire(shortcuts[i].options.event);
+                        const name = shortcuts[i].options.event;
+                        const handler = this.overrides.get(name)?.at(-1);
+                        if (handler) handler();
+                        else events.fire(name);
                     } else {
                         shortcuts[i].options.func();
                     }

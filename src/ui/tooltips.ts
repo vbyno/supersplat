@@ -3,8 +3,8 @@ import { Container, Element, Label } from '@playcanvas/pcui';
 type Direction = 'left' | 'right' | 'top' | 'bottom';
 
 class Tooltips extends Container {
-    register: (target: Element, text: string, direction?: Direction) => void;
-    unregister: (target: Element) => void;
+    register: (target: Element | HTMLElement, text: string, direction?: Direction) => void;
+    unregister: (target: Element | HTMLElement) => void;
     destroy: () => void;
 
     constructor(args: any = {}) {
@@ -22,14 +22,15 @@ class Tooltips extends Container {
 
         this.append(text);
 
-        const targets = new Map<Element, any>();
+        const targets = new Map<Element | HTMLElement, any>();
         const style = this.dom.style;
         let timer: number = 0;
 
-        this.register = (target: Element, textString: string, direction: Direction = 'bottom') => {
+        this.register = (target: Element | HTMLElement, textString: string, direction: Direction = 'bottom') => {
 
+            const dom = target instanceof HTMLElement ? target : target.dom;
             const activate = () => {
-                const rect = target.dom.getBoundingClientRect();
+                const rect = dom.getBoundingClientRect();
                 const midx = Math.floor((rect.left + rect.right) * 0.5);
                 const midy = Math.floor((rect.top + rect.bottom) * 0.5);
 
@@ -94,21 +95,26 @@ class Tooltips extends Container {
                 }
             };
 
-            target.dom.addEventListener('pointerenter', enter);
-            target.dom.addEventListener('pointerleave', leave);
+            dom.addEventListener('pointerenter', enter);
+            dom.addEventListener('pointerleave', leave);
 
-            target.on('destroy', () => {
-                this.unregister(target);
-            });
+            dom.addEventListener('focus', enter);
+            dom.addEventListener('blur', leave);
+            if (!(target instanceof HTMLElement)) target.on('destroy', () => this.unregister(target));
 
             targets.set(target, { enter, leave });
         };
 
-        this.unregister = (target: Element) => {
+        this.unregister = (target: Element | HTMLElement) => {
             const value = targets.get(target);
             if (value) {
-                target.dom.removeEventListener('pointerenter', value.enter);
-                target.dom.removeEventListener('pointerleave', value.leave);
+                const dom = target instanceof HTMLElement ? target : target.dom;
+                dom.removeEventListener('pointerenter', value.enter);
+                dom.removeEventListener('pointerleave', value.leave);
+                dom.removeEventListener('focus', value.enter);
+                dom.removeEventListener('blur', value.leave);
+                if (timer >= 0) clearTimeout(timer);
+                style.display = 'none';
                 targets.delete(target);
             }
         };

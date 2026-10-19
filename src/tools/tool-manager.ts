@@ -1,6 +1,7 @@
 import { Events } from '../events';
 
 interface Tool {
+    canActivate?: () => boolean;
     activate: () => void;
     deactivate: () => void;
 }
@@ -56,6 +57,7 @@ class ToolManager {
     }
 
     activate(toolName: string | null) {
+        if (toolName && toolName !== this.active && this.tools.get(toolName)?.canActivate?.() === false) return;
         if (toolName === this.active) {
             // re-activating the currently active tool deactivates it
             if (toolName) {
