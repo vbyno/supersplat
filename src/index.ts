@@ -14,5 +14,8 @@ const container = document.getElementById('supersplat-container');
 if (!container) {
     console.error('SuperSplat container element not found. Please add a div with id="supersplat-container" to your HTML.');
 } else {
-    main(container);
+    main(container).catch((error: unknown) => {
+        console.error(error);
+        window.dispatchEvent(new CustomEvent('supersplat:error', { detail: String(error) }));
+    });
 }

@@ -1,9 +1,10 @@
-import { Color, Mat4, Vec3, createGraphicsDevice } from 'playcanvas';
+import { Color, createGraphicsDevice } from 'playcanvas';
 
 import { registerCameraPosesEvents } from './camera-poses';
 import { registerDocEvents } from './doc';
 import { EditHistory } from './edit-history';
 import { registerEditorEvents } from './editor';
+import { exposeEditorApi } from './editor-api';
 import { Events } from './events';
 import { initFileHandler } from './file-handler';
 import { registerIframeApi } from './iframe-api';
@@ -17,7 +18,6 @@ import { Shortcuts } from './shortcuts';
 import { registerTimelineEvents } from './timeline';
 import { BoxSelection } from './tools/box-selection';
 import { BrushSelection } from './tools/brush-selection';
-
 import { EyedropperSelection } from './tools/eyedropper-selection';
 import { FloodSelection } from './tools/flood-selection';
 import { LassoSelection } from './tools/lasso-selection';
@@ -116,11 +116,7 @@ const main = async (container?: HTMLElement) => {
     const events = new Events();
 
     // Expose events globally to communicate with the main app
-    (window as any).supersplatEvents = events;
 
-    // Expose Vec3 and Mat4 for plugin access
-    (window as any).Vec3 = Vec3;
-    (window as any).Mat4 = Mat4;
 
     // store container reference for access across the app
     events.function('container', () => {
@@ -267,11 +263,10 @@ const main = async (container?: HTMLElement) => {
     toolManager.register('move', new MoveTool(events, scene));
     toolManager.register('rotate', new RotateTool(events, scene));
     toolManager.register('scale', new ScaleTool(events, scene));
-        toolManager.register('measure', new MeasureTool(events, scene, editorUI.toolsContainer.dom, editorUI.canvasContainer));
+    toolManager.register('measure', new MeasureTool(events, scene, editorUI.toolsContainer.dom, editorUI.canvasContainer));
 
     editorUI.toolsContainer.dom.appendChild(maskCanvas);
 
-    window.scene = scene;
 
     registerEditorEvents(events, editHistory, scene);
     registerSelectionEvents(events, scene);
@@ -283,11 +278,12 @@ const main = async (container?: HTMLElement) => {
     registerDocEvents(scene, events);
     registerRenderEvents(scene, events);
     registerIframeApi(events);
-    initShortcuts(events, container);
+    const shortcuts = initShortcuts(events, container);
     initFileHandler(scene, events, editorUI.appContainer.dom);
 
     // load async models
     scene.start();
+    exposeEditorApi(events, scene, toolManager, editorUI, shortcuts, container);
 
     // handle load params
     const loadList = url.searchParams.getAll('load');
